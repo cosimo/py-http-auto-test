@@ -1,10 +1,6 @@
-import json
-import os
 import traceback
-from pprint import pprint
 
 import pytest
-import yaml
 
 from http_test.spec import SpecFile, SpecTest
 
