@@ -5,6 +5,7 @@ import os
 import random
 import string
 import time
+from urllib.parse import urlparse
 import zlib
 from io import BytesIO
 
@@ -13,10 +14,9 @@ import certifi
 import pycurl
 import yaml
 
-# from queries import find_request
-
 
 class Request:
+
     def __init__(
         self,
         url: str,
@@ -24,6 +24,7 @@ class Request:
         headers: list = None,
         connect_to: str = None,
         http2: bool = False,
+        payload: str|bytes = None,
         verbose: bool = False,
     ):
         self.url = url
@@ -32,6 +33,7 @@ class Request:
         self.connect_to = connect_to
         self.http2 = http2
         self.verbose = verbose
+        self.payload = payload
 
         self.request_id = self.get_unique_request_identifier()
 
@@ -135,7 +137,23 @@ class Request:
 
         return response_body
 
-    def fire(self):
+    def is_websockets_request(self):
+        scheme = urlparse(self.url).scheme
+        return scheme in ("ws", "wss")
+
+    def fire(self) -> dict:
+        if self.is_websockets_request():
+            result_dict = self.fire_websockets_request()
+        else:
+            result_dict = self.fire_pycurl_request()
+
+        if "response_body" in result_dict:
+            decoded_content = self.inflate_response(result_dict["response_body"])
+            result_dict["response_body_decoded"] = decoded_content
+
+        return result_dict
+
+    def fire_pycurl_request(self) -> dict:
         response = BytesIO()
 
         c = self.client()
@@ -146,18 +164,27 @@ class Request:
 
         c.perform()
 
-        decoded_content = self.inflate_response(response.getvalue())
-
         result_dict = {
             "status_code": c.getinfo(c.RESPONSE_CODE),
             "connect_to": self.connect_to,
             "request_id": self.request_id,
             "request_headers": self.headers,
             "response_headers": self.response_headers,
-            "response_body": decoded_content,
+            "response_body": response.getvalue(),
             "elapsed": c.getinfo(c.TOTAL_TIME),
         }
 
         c.close()
+
+        return result_dict
+
+    def fire_websockets_request(self) -> dict:
+        from ws_request import ws_connect
+
+        result_dict = ws_connect(
+            self.url,
+            message=self.payload,
+            extra_headers=self.headers
+        )
 
         return result_dict

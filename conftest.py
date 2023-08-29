@@ -16,7 +16,6 @@ def pytest_collect_file(parent, file_path):
 
 class YamlFile(pytest.File):
     def collect(self):
-        # We need a yaml parser, e.g. PyYAML.
         import yaml
 
         test_config = yaml.safe_load(self.path.open())
@@ -131,7 +130,7 @@ def verify_response(result: dict, requirements: list) -> bool:
 
         elif requirement == "body":
             expected_strings = requirements.get("body")
-            response_body = result.get("response_body")
+            response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
                 expected_bytes = expected_string.replace("{{ domain }}", get_domain()).encode("utf-8")
                 # Must be bytes vs bytes here
@@ -164,7 +163,9 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     domain = get_domain()
     base_url = test_config.get("base_url")
 
-    url = test_spec.get("url") if test_spec.get("url").startswith("http") else base_url + test_spec.get("url")
+    url = test_spec.get("url")
+    url = url if url.startswith("http") or url.startswith("wss://") \
+        else base_url + url
 
     def replace_domain(s: str) -> str:
         return s.replace("{{ domain }}", domain)
@@ -174,6 +175,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     headers = test_spec.get("headers", [])
     use_http2 = test_spec.get("http2", False)
     verbose_output = test_spec.get("verbose", False)
+    payload = test_spec.get("payload", None)
 
     if headers:
         headers = list(map(replace_domain, headers))
@@ -183,6 +185,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
 
     r = Request(
         url=url,
+        payload=payload,
         method=method,
         headers=headers,
         verbose=verbose_output,
