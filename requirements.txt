@@ -1,4 +1,6 @@
 pytest~=7.4
 pycurl~=7.45.2
-websockets==9.1
 brotli==1.0.9
+certifi
+asyncio==3.4.3
+websocket-client==1.6.2
