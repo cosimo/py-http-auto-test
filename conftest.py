@@ -6,7 +6,7 @@ from pprint import pprint
 import pytest
 import yaml
 
-from request import Request
+from http_test.request import Request
 
 
 def pytest_collect_file(parent, file_path):

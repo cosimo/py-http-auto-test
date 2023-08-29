@@ -1,7 +1,4 @@
-import base64
-import json
 import logging
-import os
 import random
 import string
 import time
@@ -12,7 +9,8 @@ from urllib.parse import urlparse
 import brotli
 import certifi
 import pycurl
-import yaml
+
+from .ws_request import ws_connect
 
 
 class Request:
@@ -178,8 +176,5 @@ class Request:
         return result_dict
 
     def fire_websockets_request(self) -> dict:
-        from ws_request import ws_connect
-
         result_dict = ws_connect(self.url, message=self.payload, extra_headers=self.headers)
-
         return result_dict
