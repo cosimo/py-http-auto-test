@@ -1,3 +1,12 @@
+"""
+This module deserializes the YAML spec files into a list of tests.
+Each test can then be run with the `SpecTest.run()` method.
+
+The pytest `conftest.py` plugin makes use of this module to
+run the yaml tests as a pytest suite, though the running logic is
+embedded in here.
+"""
+
 import os
 from pathlib import Path
 
@@ -41,6 +50,7 @@ class SpecTest:
         connect_to = test_config.get("connect_to")
         request: Request = request_from_spec(test_spec, test_config)
         result = request.fire()
+        result2 = None
 
         self.test_result = [result]
 
