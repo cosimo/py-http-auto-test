@@ -40,9 +40,7 @@ class Request:
 
     def get_unique_request_identifier(self):
         ts = int(time.time())
-        random_str = "".join(
-            random.choice(string.ascii_uppercase + string.digits) for _ in range(4)
-        )
+        random_str = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(4))
         return f"HTTPTEST/{ts}.{random_str}"
 
     def client(self):
@@ -182,8 +180,6 @@ class Request:
     def fire_websockets_request(self) -> dict:
         from ws_request import ws_connect
 
-        result_dict = ws_connect(
-            self.url, message=self.payload, extra_headers=self.headers
-        )
+        result_dict = ws_connect(self.url, message=self.payload, extra_headers=self.headers)
 
         return result_dict
