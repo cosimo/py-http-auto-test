@@ -23,8 +23,7 @@ class YamlFile(pytest.File):
 class YamlTest(pytest.Item):
     def __init__(self, *, spec, **kwargs):
         super().__init__(**kwargs)
-        self.spec = SpecTest(name=spec["description"], spec=spec)
-        self.test_result = None
+        self.spec = SpecTest(name=spec.get("description", ""), spec=spec)
 
     def runtest(self):
         self.spec.run()
@@ -37,8 +36,4 @@ class YamlTest(pytest.Item):
         """
         This is only seen if a test fails
         """
-        return (
-            self.path,  # path to the test file
-            0,  # no line number
-            f"Test: {self.spec.spec['description']} for url {self.spec.spec['url']}",
-        )
+        return (self.path, 0, self.spec.describe())  # path to the test file  # no line number

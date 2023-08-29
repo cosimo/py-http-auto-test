@@ -43,6 +43,9 @@ class SpecTest:
         self.spec = spec
         self.test_result = []
 
+    def describe(self):
+        return f"Test: {self.name} for url {self.spec['url']}"
+
     def run(self):
         test_config = self.spec["config"]
         test_spec = self.spec
@@ -82,6 +85,8 @@ class SpecTest:
             hash2.update(result2.get("response_body"))
 
             assert hash1.hexdigest() == hash2.hexdigest(), f"Response object from connect-to doesn't match original"
+
+        return is_success
 
 
 def _dump(result: dict):
