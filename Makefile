@@ -1,4 +1,4 @@
 test:
-	pytest-3 -v ./test/test*.yaml --capture=no
+	pytest-3 -v ./spec/test*.yaml --capture=no
 
 .PHONY: test
