@@ -21,7 +21,7 @@ class Request:
         headers: list = None,
         connect_to: str = None,
         http2: bool = False,
-        payload: str | bytes = None,
+        payload: str = None,
         verbose: bool = False,
     ):
         self.url = url
@@ -30,7 +30,7 @@ class Request:
         self.connect_to = connect_to
         self.http2 = http2
         self.verbose = verbose
-        self.payload = payload
+        self.payload: bytes = payload.encode() if payload else None
 
         self.request_id = self.get_unique_request_identifier()
 
