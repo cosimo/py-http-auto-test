@@ -58,7 +58,9 @@ class YamlTest(pytest.Item):
             self.test_result.append(result2)
 
             is_success = verify_response(result2, requirements)
-            assert is_success, f"Failed: {test_spec.get('description')} (connect_to: {connect_to})"
+            assert (
+                is_success
+            ), f"Failed: {test_spec.get('description')} (connect_to: {connect_to})"
 
         compare_responses = test_spec.get("match", {}).get("status", "") == str(200)
         if connect_to and compare_responses:
@@ -70,11 +72,17 @@ class YamlTest(pytest.Item):
             hash2 = hashlib.sha256()
             hash2.update(result2.get("response_body"))
 
-            assert hash1.hexdigest() == hash2.hexdigest(), f"Response object from connect-to doesn't match original"
+            assert (
+                hash1.hexdigest() == hash2.hexdigest()
+            ), f"Response object from connect-to doesn't match original"
 
     def repr_failure(self, excinfo):
         """Called when self.runtest() raises an exception."""
-        return str(excinfo.value) + "\n" + "".join((traceback.format_tb(excinfo.tb, limit=10)))
+        return (
+            str(excinfo.value)
+            + "\n"
+            + "".join((traceback.format_tb(excinfo.tb, limit=10)))
+        )
 
     def reportinfo(self):
         """
@@ -108,7 +116,9 @@ def verify_response(result: dict, requirements: list) -> bool:
             expected_headers = requirements.get("headers")
 
             for expected_header in expected_headers:
-                header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
+                header_name, expected_value = list(
+                    map(str.strip, expected_header.split(":", 1))
+                )
                 expected_value = expected_value.replace("{{ domain }}", get_domain())
                 # pprint(response_headers)
                 actual_value = response_headers.get(header_name) or ""
@@ -132,7 +142,9 @@ def verify_response(result: dict, requirements: list) -> bool:
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-                expected_bytes = expected_string.replace("{{ domain }}", get_domain()).encode("utf-8")
+                expected_bytes = expected_string.replace(
+                    "{{ domain }}", get_domain()
+                ).encode("utf-8")
                 # Must be bytes vs bytes here
                 assert (
                     expected_bytes in response_body
@@ -164,8 +176,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     base_url = test_config.get("base_url")
 
     url = test_spec.get("url")
-    url = url if url.startswith("http") or url.startswith("wss://") \
-        else base_url + url
+    url = url if url.startswith("http") or url.startswith("wss://") else base_url + url
 
     def replace_domain(s: str) -> str:
         return s.replace("{{ domain }}", domain)

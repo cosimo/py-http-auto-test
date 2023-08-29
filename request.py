@@ -5,9 +5,9 @@ import os
 import random
 import string
 import time
-from urllib.parse import urlparse
 import zlib
 from io import BytesIO
+from urllib.parse import urlparse
 
 import brotli
 import certifi
@@ -16,7 +16,6 @@ import yaml
 
 
 class Request:
-
     def __init__(
         self,
         url: str,
@@ -24,7 +23,7 @@ class Request:
         headers: list = None,
         connect_to: str = None,
         http2: bool = False,
-        payload: str|bytes = None,
+        payload: str | bytes = None,
         verbose: bool = False,
     ):
         self.url = url
@@ -41,7 +40,9 @@ class Request:
 
     def get_unique_request_identifier(self):
         ts = int(time.time())
-        random_str = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(4))
+        random_str = "".join(
+            random.choice(string.ascii_uppercase + string.digits) for _ in range(4)
+        )
         return f"HTTPTEST/{ts}.{random_str}"
 
     def client(self):
@@ -182,9 +183,7 @@ class Request:
         from ws_request import ws_connect
 
         result_dict = ws_connect(
-            self.url,
-            message=self.payload,
-            extra_headers=self.headers
+            self.url, message=self.payload, extra_headers=self.headers
         )
 
         return result_dict

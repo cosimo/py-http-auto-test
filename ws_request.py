@@ -33,14 +33,14 @@ def ws_connect(ws_url, message="Hello", extra_headers=None):
 
     try:
         ws = create_connection(ws_url, timeout=3, header=extra_headers)
-        #print("<<<", ws.recv())
-        #print(f"Sending message '{message}'")
+        # print("<<<", ws.recv())
+        # print(f"Sending message '{message}'")
         ws.send(message)
         result = {
             "status_code": 200,
             "response_body": ws.recv().encode(),
         }
-        #print(f"<<< Received '{result}'")
+        # print(f"<<< Received '{result}'")
         ws.close()
 
     except WebSocketBadStatusException as e:
