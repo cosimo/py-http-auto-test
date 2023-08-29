@@ -9,8 +9,7 @@ from urllib.parse import urlparse
 import brotli
 import certifi
 import pycurl
-
-from .ws_request import ws_connect
+from ws_request import ws_connect
 
 
 class Request:

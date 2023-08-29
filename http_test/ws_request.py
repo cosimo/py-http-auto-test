@@ -6,7 +6,7 @@ a response, without having to do any asyncio shenanigans.
 import logging
 
 from websocket import create_connection
-from websocket._exceptions import WebSocketBadStatusException, WebSocketException
+from websocket._exceptions import WebSocketBadStatusException
 
 
 def select_origin_header(extra_headers):
@@ -26,7 +26,6 @@ def ws_connect(ws_url, message="Hello", extra_headers=None):
     Connect to a websocket URL and send a message.
     Returns any response received from the server.
     """
-
     # Needed to avoid sending an extra Origin HTTP header,
     # which is currently crashing our cors lua code
     origin, extra_headers = select_origin_header(extra_headers)
