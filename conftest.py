@@ -142,7 +142,7 @@ def verify_response(result: dict, requirements: list) -> bool:
 
 
 def get_domain() -> str:
-    return os.environ.get("TEST_DOMAIN", "kahoot-experimental.it")
+    return os.environ.get("HTTPTEST_DOMAIN", "")
 
 
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
