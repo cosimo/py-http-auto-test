@@ -1,2 +1,4 @@
 isort
 black
+pytest
+setuptools
