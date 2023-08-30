@@ -8,6 +8,6 @@ release:
 	python -m twine upload dist/*
 
 test:
-	pytest-3 -v ./spec/test*.yaml --capture=no
+	pytest-3 -v ./test --capture=no
 
 .PHONY: test
