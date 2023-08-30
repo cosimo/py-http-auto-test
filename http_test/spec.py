@@ -50,10 +50,8 @@ class SpecTest:
         test_config = self.spec["config"]
         test_spec = self.spec
 
-        connect_to = test_config.get("connect_to")
         request: Request = request_from_spec(test_spec, test_config)
         result = request.fire()
-        result2 = None
 
         self.test_result = [result]
 
@@ -61,6 +59,7 @@ class SpecTest:
         is_success = verify_response(result, requirements)
         assert is_success, f"Failed: {test_spec.get('description')}"
 
+        """
         # Repeat the same test connecting to a different IP address
         # and comparing the two responses
         if connect_to:
@@ -87,6 +86,7 @@ class SpecTest:
             hash2.update(result2.get("response_body"))
 
             assert hash1.hexdigest() == hash2.hexdigest(), f"Response object from connect-to doesn't match original"
+        """
 
         return is_success
 
@@ -169,10 +169,6 @@ def verify_response(result: dict, requirements: dict) -> bool:
     return True
 
 
-def get_domain() -> str:
-    return os.environ.get("HTTPTEST_DOMAIN", "")
-
-
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     """
     Transform the following YAML spec test into a Request object.
@@ -188,13 +184,25 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
         server: openresty
     ```
     """
-    domain = get_domain()
     base_url = test_config.get("base_url")
 
     url = test_spec.get("url")
     url = url if url.startswith("http") or url.startswith("wss://") else base_url + url
 
     url = replace_variables(url)
+
+    # This allows one to have dynamic --connect-to settings, such as:
+    #
+    #   connect_to:
+    #     - "{{ host }}:443:{{ target }}"
+    #
+    # and using HTTPTEST_HOST and HTTPTEST_TARGET environment variables
+    # to provide the dynamic values.
+
+    connect_to = test_config.get("connect_to", None)
+    if connect_to:
+        connect_to = list(map(replace_variables, connect_to))
+
     method = test_spec.get("method", "GET")
     headers = test_spec.get("headers", [])
     use_http2 = test_spec.get("http2", False)
@@ -209,6 +217,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
 
     r = Request(
         url=url,
+        connect_to=connect_to,
         payload=payload,
         method=method,
         headers=headers,

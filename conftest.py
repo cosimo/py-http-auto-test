@@ -1,3 +1,27 @@
+"""
+Pytest plugin to load http_test tests from YAML files
+
+Here's an example yaml test file:
+
+```yaml
+---
+base_url: "https://httpbin.org"
+
+tests:
+  - url: "/get"
+    description: "Test GET request"
+    method: "GET"
+    headers:
+      - "Accept: application/json"
+    match:
+      status: 200
+      headers:
+        - "content-type: application/json"
+      timing: 5000ms
+  - ...
+```
+
+"""
 import traceback
 
 import pytest
