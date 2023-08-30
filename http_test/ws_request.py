@@ -9,6 +9,7 @@ import ssl
 
 import certifi
 import websockets
+from websockets.exceptions import InvalidStatusCode
 
 NO_RESPONSE = {
     "status_code": 0,
@@ -39,40 +40,48 @@ def get_ssl_context():
     return ssl_context
 
 
-async def ws_connect(url, host=None, port=None, message="Hello", extra_headers=None, read_timeout=3):
+async def ws_connect(
+    url, host=None, port=None, server_hostname=None, message="Hello", extra_headers=None, read_timeout=3
+):
     """
     Connect to a websocket URL and send a message.
     Returns any response received from the server.
     """
-    async with websockets.connect(
-        url,
-        host=host,
-        port=port,
-        compression=None,
-        close_timeout=read_timeout,
-        extra_headers=headers_to_dict(extra_headers),
-        ssl=get_ssl_context(),
-    ) as websocket:
-        try:
-            logging.info(f"> {message}")
-            await websocket.send(message)
-            await asyncio.sleep(0)
-
+    try:
+        async with websockets.connect(
+            url,
+            host=host,
+            port=port,
+            server_hostname=server_hostname,
+            compression=None,
+            close_timeout=read_timeout,
+            extra_headers=headers_to_dict(extra_headers),
+            ssl=get_ssl_context(),
+        ) as websocket:
             try:
-                response = await asyncio.wait_for(websocket.recv(), read_timeout)
-            except asyncio.TimeoutError:
-                logging.warning("Timeout while waiting for websocket response")
+                logging.info(f"> {message}")
+                await websocket.send(message)
+                await asyncio.sleep(0)
+
+                try:
+                    response = await asyncio.wait_for(websocket.recv(), read_timeout)
+                except asyncio.TimeoutError:
+                    logging.warning("Timeout while waiting for websocket response")
+                    return NO_RESPONSE
+
+            except websockets.ConnectionClosed:
+                logging.warning("Connection closed while waiting for websocket response")
                 return NO_RESPONSE
 
-        except websockets.ConnectionClosed:
-            logging.warning("Connection closed while waiting for websocket response")
-            return NO_RESPONSE
+            response = {
+                # Is there an HTTP status for a websocket connection?
+                "status_code": 200,
+                "response_body": response.encode(),
+            }
 
-        response = {
-            # Is there an HTTP status for a websocket connection?
-            "status_code": 200,
-            "response_body": response.encode(),
-        }
+            logging.info(f"< {response}")
+            return response
 
-        logging.info(f"< {response}")
-        return response
+    except InvalidStatusCode as e:
+        logging.warning(f"Invalid status code received: {e.status_code}")
+        return {"status_code": e.status_code, "response_headers": e.headers, "exception": e}

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import string
@@ -25,7 +26,7 @@ class Request:
         url: str,
         method: str = "GET",
         headers: list = None,
-        connect_to: str = None,
+        connect_to: list = None,
         http2: bool = False,
         payload: str = None,
         verbose: bool = False,
@@ -196,6 +197,74 @@ class Request:
 
         return result_dict
 
+    def resolve_connect_to(self):
+        """
+        Emulate curl's --connect-to functionality with the same semantics.
+        Given the `self.connect_to` list of string entries, try to find a match
+        to the current target url. If one is found, return the alternative host
+        and port to connect to.
+
+        This is probably trickier than I think it is, but the basics work.
+        """
+        parsed_url = urlparse(self.url)
+        host = parsed_url.hostname
+        port = (
+            parsed_url.port
+            if parsed_url.port
+            else (443 if parsed_url.scheme == "https" or parsed_url.scheme == "wss" else 80)
+        )
+
+        if not self.connect_to:
+            return host, port
+
+        ct_host = host
+        ct_port = port
+
+        for connect_to_entry in self.connect_to:
+            matching_entry = f"{host}:{port}:"
+            if connect_to_entry.startswith(matching_entry):
+                ct_host_port = connect_to_entry.split(":", 2)[2]
+                if ":" in ct_host_port:
+                    ct_host, ct_port = ct_host_port.split(":", 1)
+                else:
+                    ct_host = ct_host_port
+                break
+
+        # Could this be needed?
+        # if ct_host != host and not self.header_in_list("host"):
+        #    logging.info(f"Adding Host header: {host} to request")
+        #    self.headers.append(f"Host: {host}")
+
+        logging.warning(f"Connecting to host: {host}, port: {port} instead of {self.url}")
+
+        return ct_host, int(ct_port)
+
+    def header_in_list(self, header_name: str) -> bool:
+        """
+        Returns True if the given header name is present in the list of headers
+        for this request.
+        """
+        for header in self.headers:
+            if header_name.lower() + ":" in header.lower():
+                return True
+
+        return False
+
     def fire_websockets_request(self) -> dict:
-        result_dict = ws_connect(self.url, message=self.payload, extra_headers=self.headers)
+        hostname = urlparse(self.url).hostname
+        ct_host, ct_port = self.resolve_connect_to()
+        result_dict = asyncio.run(
+            ws_connect(
+                self.url,
+                host=ct_host,
+                port=ct_port,
+                server_hostname=hostname,
+                message=self.payload,
+                extra_headers=self.headers,
+            )
+        )
+
+        result_dict["connect_to"] = self.connect_to
+        result_dict["request_id"] = self.request_id
+
         return result_dict
