@@ -14,6 +14,12 @@ from http_test.ws_request import ws_connect
 
 
 class Request:
+    """
+    Each `Request` instance represents a single test request to be performed.
+    The `fire()` method performs the request and returns a dict structure with
+    the results.
+    """
+
     def __init__(
         self,
         url: str,
@@ -118,6 +124,9 @@ class Request:
             self.response_headers[name] = value
 
     def inflate_response(self, response_body: bytes) -> bytes:
+        """
+        Attempts to transparently decompress the response body if needed.
+        """
         try:
             is_gzip = response_body[0] == 0x1F and response_body[1] == 0x8B
         except IndexError:
@@ -139,6 +148,18 @@ class Request:
         return scheme in ("ws", "wss")
 
     def fire(self) -> dict:
+        """
+        Performs the HTTP/Websocket request and returns a dict structure with
+        the results. The contents of the dictionary can vary based on the type
+        of request being performed, and whether the request is done via pycurl
+        or websocket-client.
+
+        The following keys should generally be present:
+        - `status_code`
+        - `response_body`
+        - `response_body_decoded`
+        - `response_headers`
+        """
         if self.is_websockets_request():
             result_dict = self.fire_websockets_request()
         else:

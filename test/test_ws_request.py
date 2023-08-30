@@ -2,6 +2,11 @@ from http_test.ws_request import select_origin_header
 
 
 def test_select_origin_none():
+    """
+    When no origin header is specified in the list of headers to be sent,
+    we should return None as the origin, and the same list of headers as we
+    received.
+    """
     headers = [
         "Host: test.example.com",
         "Connection: Upgrade",
@@ -13,6 +18,10 @@ def test_select_origin_none():
 
 
 def test_select_origin_header():
+    """
+    When an origin header is specified in the list of headers to be sent,
+    we return its value as origin, and remove it from the list of headers.
+    """
     headers = [
         "Host: test.example.com",
         "Connection: Upgrade",
@@ -30,6 +39,9 @@ def test_select_origin_header():
 
 
 def test_select_origin_header_mixed_case():
+    """
+    Test that we can correctly detect the origin header when it's mixed case
+    """
     headers = [
         "Host: test.example.com",
         "Connection: Upgrade",
