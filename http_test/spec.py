@@ -74,7 +74,9 @@ class SpecTest:
             is_success = verify_response(result2, requirements)
             assert is_success, f"Failed: {test_spec.get('description')} (connect_to: {connect_to})"
 
-        compare_responses = test_spec.get("match", {}).get("status", "") == str(200)
+        is_http_200_expected = test_spec.get("match", {}).get("status", "") == str(200)
+        compare_responses = is_http_200_expected
+
         if connect_to and compare_responses:
             import hashlib
 
@@ -93,6 +95,28 @@ def _dump(result: dict):
     return yaml.safe_dump(result)
 
 
+def get_httptest_env_variables():
+    """
+    Return a dict of all environment variables starting with `HTTPTEST_`.
+    """
+    httptest_vars = {}
+    prefix = "HTTPTEST_"
+    for key, value in os.environ.items():
+        if key.startswith(prefix):
+            name = key.replace(prefix, "").lower()
+            httptest_vars[name] = value
+
+    return httptest_vars
+
+
+def replace_variables(s: str) -> str:
+    import jinja2
+
+    httptest_vars = get_httptest_env_variables()
+    t = jinja2.Template(s)
+    return t.render(**httptest_vars)
+
+
 def verify_response(result: dict, requirements: dict) -> bool:
     if not requirements:
         return True
@@ -100,10 +124,12 @@ def verify_response(result: dict, requirements: dict) -> bool:
     for requirement in requirements.keys():
         if requirement == "status":
             status_code = result.get("status_code")
-            expected_status_code = requirements.get("status")
+            expected_status_codes = requirements.get("status")
+            if expected_status_codes and not isinstance(expected_status_codes, list):
+                expected_status_codes = [expected_status_codes]
             assert (
-                status_code == expected_status_code
-            ), f"Expected status code {expected_status_code}, got {status_code}"
+                status_code in expected_status_codes
+            ), f"Expected status codes {expected_status_codes}, got {status_code}"
 
         elif requirement == "headers":
             response_headers = result.get("response_headers")
@@ -111,7 +137,7 @@ def verify_response(result: dict, requirements: dict) -> bool:
 
             for expected_header in expected_headers:
                 header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
-                expected_value = expected_value.replace("{{ domain }}", get_domain())
+                expected_value = replace_variables(expected_value)
                 # pprint(response_headers)
                 actual_value = response_headers.get(header_name) or ""
                 # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
@@ -134,7 +160,7 @@ def verify_response(result: dict, requirements: dict) -> bool:
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-                expected_bytes = expected_string.replace("{{ domain }}", get_domain()).encode("utf-8")
+                expected_bytes = replace_variables(expected_string).encode("utf-8")
                 # Must be bytes vs bytes here
                 assert (
                     expected_bytes in response_body
@@ -168,10 +194,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     url = test_spec.get("url")
     url = url if url.startswith("http") or url.startswith("wss://") else base_url + url
 
-    def replace_domain(s: str) -> str:
-        return s.replace("{{ domain }}", domain)
-
-    url = replace_domain(url)
+    url = replace_variables(url)
     method = test_spec.get("method", "GET")
     headers = test_spec.get("headers", [])
     use_http2 = test_spec.get("http2", False)
@@ -179,7 +202,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     payload = test_spec.get("payload", None)
 
     if headers:
-        headers = list(map(replace_domain, headers))
+        headers = list(map(replace_variables, headers))
 
     if verbose_output:
         print()
