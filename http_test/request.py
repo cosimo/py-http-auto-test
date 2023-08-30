@@ -36,9 +36,14 @@ class Request:
         self.connect_to = connect_to
         self.http2 = http2
         self.verbose = verbose
-        self.payload: bytes = payload.encode() if payload else None
+        self.payload: str = payload if payload else None
 
         self.request_id = self.get_unique_request_identifier()
+
+        # Define a custom user-agent string per request.
+        # This will help us find the request in Datadog if needed.
+        self.user_agent = f"User-Agent: {self.request_id}"
+        self.headers.append(self.user_agent)
 
         self.response_headers = dict()
 
@@ -54,11 +59,6 @@ class Request:
             c.setopt(c.CUSTOMREQUEST, self.method)
 
         c.setopt(c.URL, self.url)
-
-        # Define a custom user-agent string per request.
-        # This will help us find the request in Datadog if needed.
-        self.user_agent = f"User-Agent: {self.request_id}"
-        self.headers.append(self.user_agent)
 
         c.setopt(c.HTTPHEADER, self.headers)
 
