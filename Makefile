@@ -1,7 +1,9 @@
-.PHONY: dist
+.PHONY: clean dist release test
 
-dist:
+clean:
 	rm -rf dist build
+
+dist: clean
 	python setup.py sdist bdist_wheel
 
 release:
@@ -9,5 +11,3 @@ release:
 
 test:
 	pytest-3 -v ./test --capture=no
-
-.PHONY: test
