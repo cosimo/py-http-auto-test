@@ -26,7 +26,9 @@ class YamlTest(pytest.Item):
 
     def repr_failure(self, excinfo):
         """Called when self.runtest() raises an exception."""
-        return str(excinfo.value) + "\n" + "".join((traceback.format_tb(excinfo.tb, limit=10)))
+        return f"Exception {excinfo.type.__qualname__} ({excinfo.type}):\n" f"{excinfo.value}\n" + "".join(
+            (traceback.format_tb(excinfo.tb, limit=10))
+        )
 
     def reportinfo(self):
         """
