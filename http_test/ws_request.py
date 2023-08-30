@@ -1,56 +1,78 @@
 """
 This module performs the websockets connection, sends a message and returns
-a response, without having to do any asyncio shenanigans.
+a response, using asyncio, via the python-websockets library.
 """
 
+import asyncio
 import logging
+import ssl
 
-from websocket import create_connection
-from websocket._exceptions import WebSocketBadStatusException
+import certifi
+import websockets
+
+NO_RESPONSE = {
+    "status_code": 0,
+    "response_body": b"",
+}
+
+# CAUTION! Enabling DEBUG logging for websockets makes the requests fail.
+# Failures are caused by exception objects being logged directly, and
+# not as strings.
+#
+# logging.basicConfig(format="[%(asctime)s] %(message)s", level=logging.DEBUG)
 
 
-def select_origin_header(extra_headers):
-    origin = None
-    headers_no_origin = []
-
-    for header in extra_headers:
-        if header.lower().startswith("origin:"):
-            origin = header.lower().replace("origin: ", "")
-        else:
-            headers_no_origin.append(header)
-    return origin, headers_no_origin
+def headers_to_dict(headers: list) -> dict:
+    headers_dict = dict()
+    for header, value in map(lambda h: h.split(":", 1), headers):
+        headers_dict[header.strip().lower()] = value.strip()
+    return headers_dict
 
 
-def ws_connect(ws_url, message="Hello", extra_headers=None):
+def get_ssl_context():
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+    ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+    ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+    ssl_context.load_verify_locations(certifi.where())
+
+    return ssl_context
+
+
+async def ws_connect(url, host=None, port=None, message="Hello", extra_headers=None, read_timeout=3):
     """
     Connect to a websocket URL and send a message.
     Returns any response received from the server.
     """
-    # Needed to avoid sending an extra Origin HTTP header,
-    # which is currently crashing our cors lua code
-    origin, extra_headers = select_origin_header(extra_headers)
+    async with websockets.connect(
+        url,
+        host=host,
+        port=port,
+        compression=None,
+        close_timeout=read_timeout,
+        extra_headers=headers_to_dict(extra_headers),
+        ssl=get_ssl_context(),
+    ) as websocket:
+        try:
+            logging.info(f"> {message}")
+            await websocket.send(message)
+            await asyncio.sleep(0)
 
-    try:
-        ws = create_connection(ws_url, timeout=3, header=extra_headers)
-        # print("<<<", ws.recv())
-        # print(f"Sending message '{message}'")
-        ws.send(message)
-        result = {
+            try:
+                response = await asyncio.wait_for(websocket.recv(), read_timeout)
+            except asyncio.TimeoutError:
+                logging.warning("Timeout while waiting for websocket response")
+                return NO_RESPONSE
+
+        except websockets.ConnectionClosed:
+            logging.warning("Connection closed while waiting for websocket response")
+            return NO_RESPONSE
+
+        response = {
+            # Is there an HTTP status for a websocket connection?
             "status_code": 200,
-            "response_body": ws.recv().encode(),
-        }
-        # print(f"<<< Received '{result}'")
-        ws.close()
-
-    except WebSocketBadStatusException as e:
-        logging.error(
-            f"Error while trying to connect to websocket: status_code={e.status_code}"
-            f" resp_headers={e.resp_headers} resp_body={e.resp_body}"
-        )
-        result = {
-            "status_code": e.status_code,
-            "response_body": e.resp_body,
-            "response_headers": e.resp_headers,
+            "response_body": response.encode(),
         }
 
-    return result
+        logging.info(f"< {response}")
+        return response
