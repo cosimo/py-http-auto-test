@@ -11,7 +11,7 @@ def read(filename):
 
 
 setup(
-    name="py-http-test",
+    name="py-http-auto-test",
     version=__version__,
     description="Python HTTP automated testing facility",
     long_description=read("README.md"),
