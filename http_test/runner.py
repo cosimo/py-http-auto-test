@@ -36,7 +36,7 @@ def inject_test_config_dict(test: dict, target_host: str, template_vars: dict) -
 
 
 def run_specfiles(
-    test_files: list[str],
+    test_files: list,
     target_host: str = None,
     template_vars: dict = None,
     verbose: bool = False,
