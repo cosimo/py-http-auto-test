@@ -41,7 +41,13 @@ def get_ssl_context():
 
 
 async def ws_connect(
-    url, host=None, port=None, server_hostname=None, message="Hello", extra_headers=None, read_timeout=3
+    url,
+    host=None,
+    port=None,
+    server_hostname=None,
+    message="Hello",
+    extra_headers=None,
+    read_timeout=3,
 ):
     """
     Connect to a websocket URL and send a message.
@@ -84,4 +90,8 @@ async def ws_connect(
 
     except InvalidStatusCode as e:
         logging.warning(f"Invalid status code received: {e.status_code}")
-        return {"status_code": e.status_code, "response_headers": e.headers, "exception": e}
+        return {
+            "status_code": e.status_code,
+            "response_headers": e.headers,
+            "exception": e,
+        }
