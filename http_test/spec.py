@@ -8,6 +8,7 @@ embedded in here.
 """
 
 import os
+import urllib.parse
 from pathlib import Path
 
 import yaml
@@ -56,7 +57,8 @@ class SpecTest:
         self.test_result = [result]
 
         requirements = test_spec.get("match")
-        is_success = verify_response(result, requirements)
+        template_vars = test_config.get("template_vars")
+        is_success = verify_response(result, requirements, template_vars)
         assert is_success, f"Failed: {test_spec.get('description')}"
 
         """
@@ -109,15 +111,18 @@ def get_httptest_env_variables():
     return httptest_vars
 
 
-def replace_variables(s: str) -> str:
+def replace_variables(s: str, vars: dict = None) -> str:
     import jinja2
 
     httptest_vars = get_httptest_env_variables()
+    if vars:
+        httptest_vars.update(vars)
+
     t = jinja2.Template(s)
     return t.render(**httptest_vars)
 
 
-def verify_response(result: dict, requirements: dict) -> bool:
+def verify_response(result: dict, requirements: dict, template_vars: dict = None) -> bool:
     if not requirements:
         return True
 
@@ -137,7 +142,7 @@ def verify_response(result: dict, requirements: dict) -> bool:
 
             for expected_header in expected_headers:
                 header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
-                expected_value = replace_variables(expected_value)
+                expected_value = replace_variables(expected_value, template_vars)
                 # pprint(response_headers)
                 actual_value = response_headers.get(header_name) or ""
                 # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
@@ -160,13 +165,42 @@ def verify_response(result: dict, requirements: dict) -> bool:
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-                expected_bytes = replace_variables(expected_string).encode("utf-8")
+                expected_bytes = replace_variables(expected_string, template_vars).encode("utf-8")
                 # Must be bytes vs bytes here
                 assert (
                     expected_bytes in response_body
                 ), f"Expected response body to contain '{expected_string}': {_dump(result)}"
 
     return True
+
+
+def is_relative_url(url: str) -> bool:
+    """
+    Returns True if the given URL is relative.
+    """
+    return not urllib.parse.urlparse(url).scheme
+
+
+def resolve_connect_to(url: str, test_config: dict) -> list:
+    connect_to = test_config.get("connect_to")
+
+    # The `HTTPTEST_TARGET_HOST` variable is special, it enables an "automatic"
+    # `--connect-to` setting, as if we had specified `--connect-to` for [py]curl
+    target_host = test_config.get("target_host", os.environ.get("HTTPTEST_TARGET_HOST"))
+    parsed_url = urllib.parse.urlparse(url)
+
+    if not connect_to and target_host:
+        port = parsed_url.port if parsed_url.port else (443 if parsed_url.scheme in ("wss", "https") else 80)
+        connect_to = [f"{parsed_url.hostname}:{port}:{target_host}"]
+
+    if connect_to and not isinstance(connect_to, list):
+        connect_to = [connect_to]
+
+    if connect_to:
+        template_vars = test_config.get("template_vars")
+        connect_to = [replace_variables(e, template_vars) for e in connect_to]
+
+    return connect_to
 
 
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
@@ -187,9 +221,11 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     base_url = test_config.get("base_url")
 
     url = test_spec.get("url")
-    url = url if url.startswith("http") or url.startswith("wss://") else base_url + url
+    if is_relative_url(url):
+        url = base_url + url
 
-    url = replace_variables(url)
+    template_vars = test_config.get("template_vars")
+    url = replace_variables(url, template_vars)
 
     # This allows one to have dynamic --connect-to settings, such as:
     #
@@ -198,10 +234,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     #
     # and using HTTPTEST_HOST and HTTPTEST_TARGET environment variables
     # to provide the dynamic values.
-
-    connect_to = test_config.get("connect_to", None)
-    if connect_to:
-        connect_to = list(map(replace_variables, connect_to))
+    connect_to = resolve_connect_to(url, test_config)
 
     method = test_spec.get("method", "GET")
     headers = test_spec.get("headers", [])
@@ -210,7 +243,7 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     payload = test_spec.get("payload", None)
 
     if headers:
-        headers = list(map(replace_variables, headers))
+        headers = [replace_variables(h, template_vars) for h in headers]
 
     if verbose_output:
         print()
