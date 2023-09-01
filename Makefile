@@ -6,7 +6,7 @@ clean:
 dist: clean
 	python setup.py sdist bdist_wheel
 
-release:
+release: test dist
 	python -m twine upload dist/*
 
 test:
