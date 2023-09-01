@@ -148,7 +148,7 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
                 # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
                 assert (
                     expected_value.lower() in actual_value.lower()
-                ), f"Expected header {actual_value} to contain '{expected_value}'"
+                ), f"Expected header {header_name} to contain '{expected_value}' (was '{actual_value}')"
 
         elif requirement == "timing":
             elapsed_time_s = result.get("elapsed")
