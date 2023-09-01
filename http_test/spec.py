@@ -45,7 +45,7 @@ class SpecTest:
         self.test_result = []
 
     def describe(self):
-        return f"Test: {self.name} for url {self.spec['url']}"
+        return f"{self.name} for url {self.spec['url']}"
 
     def run(self):
         test_config = self.spec["config"]
