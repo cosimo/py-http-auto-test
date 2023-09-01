@@ -15,6 +15,7 @@ setup(
     version=__version__,
     description="Python HTTP automated testing facility",
     long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     author="Cosimo Streppone",
     author_email="cosimo@streppone.it",
     url="https://github.com/cosimo/py-http-test",
