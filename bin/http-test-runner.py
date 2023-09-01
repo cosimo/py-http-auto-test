@@ -60,4 +60,4 @@ def run_tests(test_files, target_host=None, template_vars=None, verbose=False):
 
 
 if __name__ == "__main__":
-    run_tests()
+    run_tests(auto_envvar_prefix="HTTPTEST")

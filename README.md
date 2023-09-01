@@ -119,10 +119,16 @@ Example:
 pytest -v ./test.yaml
 ```
 
-If you need to pass on template variables, you can do so using environment variables prefixed with the string `HTTPTEST_*`, as in:
+If you need to pass on arguments or template variables, you can do so using environment variables prefixed with the string `HTTPTEST_`, as in:
 
 ```bash
-HTTPTEST_HOSTNAME=test.mydomain.com pytest -v ./test.yaml
+HTTPTEST_TARGET_HOST="127.0.0.1" HTTPTEST_TEMPLATE_VARS="hostname=test.mydomain.com" pytest -v ./test.yaml
+```
+
+To pass on multiple environment variables, use a space character to separate multiple values, as in:
+
+```bash
+HTTPTEST_TARGET_HOST="127.0.0.1" HTTPTEST_TEMPLATE_VARS="hostname=test.mydomain.com protocol=https" pytest -v ./test.yaml
 ```
 
 ## Comprehensive Example of a Single Test
