@@ -4,7 +4,7 @@ import random
 import string
 import time
 import zlib
-from io import BytesIO
+from io import BytesIO, StringIO
 from urllib.parse import urlparse
 
 import brotli
@@ -180,6 +180,12 @@ class Request:
 
         self.response_headers.clear()
         c.setopt(c.HEADERFUNCTION, self.header_function)
+
+        if self.payload:
+            request_body = StringIO(self.payload)
+            c.setopt(c.POST, 1)
+            c.setopt(c.READDATA, request_body)
+            c.setopt(c.POSTFIELDSIZE, len(self.payload))
 
         c.perform()
 
