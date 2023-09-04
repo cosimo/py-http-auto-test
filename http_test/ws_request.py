@@ -54,16 +54,19 @@ async def ws_connect(
     Returns any response received from the server.
     """
     try:
-        async with websockets.connect(
-            url,
-            host=host,
-            port=port,
-            server_hostname=server_hostname,
-            compression=None,
-            close_timeout=read_timeout,
-            extra_headers=headers_to_dict(extra_headers),
-            ssl=get_ssl_context(),
-        ) as websocket:
+        ws_connect_args = {
+            "host": host,
+            "port": port,
+            "compression": None,
+            "close_timeout": read_timeout,
+            "extra_headers": headers_to_dict(extra_headers),
+        }
+
+        is_secure_ws = url.startswith("wss://")
+        if is_secure_ws:
+            ws_connect_args.update(server_hostname=server_hostname, ssl=get_ssl_context())
+
+        async with websockets.connect(url, **ws_connect_args) as websocket:
             try:
                 logging.info(f"> {message}")
                 await websocket.send(message)
