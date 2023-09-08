@@ -143,12 +143,25 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
             for expected_header in expected_headers:
                 header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
                 expected_value = replace_variables(expected_value, template_vars)
-                # pprint(response_headers)
-                actual_value = response_headers.get(header_name) or ""
-                # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
+                actual_values = response_headers.get(header_name) or ""
+
+                # For multiple instances of the same HTTP header, get() returns a list
+                if not isinstance(actual_values, list):
+                    actual_values = [actual_values]
+
+                at_least_one_matches = False
+                matching_value = None
+
+                for actual_value in actual_values:
+                    # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
+                    at_least_one_matches |= expected_value.lower() in actual_value.lower()
+                    if at_least_one_matches:
+                        matching_value = actual_value
+                        break
+
                 assert (
-                    expected_value.lower() in actual_value.lower()
-                ), f"Expected header {header_name} to contain '{expected_value}' (was '{actual_value}')"
+                    at_least_one_matches,
+                ), f"Expected header {header_name} to contain '{expected_value}' (was '{matching_value}')"
 
         elif requirement == "timing":
             elapsed_time_s = result.get("elapsed")
