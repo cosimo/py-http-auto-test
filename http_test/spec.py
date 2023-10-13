@@ -160,7 +160,7 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
                         break
 
                 assert (
-                    at_least_one_matches,
+                    at_least_one_matches
                 ), f"Expected header {header_name} to contain '{expected_value}' (was '{matching_value}')"
 
         elif requirement == "timing":
