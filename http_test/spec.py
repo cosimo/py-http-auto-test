@@ -45,7 +45,11 @@ class SpecTest:
         self.test_result = []
 
     def describe(self):
-        return f"{self.name} for url {self.spec['url']}"
+        url = url_from_spec(self.spec)
+        connect_to = resolve_connect_to(url, self.spec["config"])
+        if connect_to is not None:
+            url = f"{url}\n  Connect-to: {connect_to}"
+        return f"{self.name} for url {url}"
 
     def run(self):
         test_config = self.spec["config"]
@@ -215,6 +219,20 @@ def resolve_connect_to(url: str, test_config: dict) -> list:
 
     return connect_to
 
+def url_from_spec(test_spec: dict) -> str:
+    """
+    Returns a full templated URL from the test spec.
+    """
+    test_config = test_spec.get("config")
+    base_url = test_config.get("base_url")
+    url = test_spec.get("url")
+    if is_relative_url(url):
+        url = base_url + url
+
+    template_vars = test_config.get("template_vars")
+    url = replace_variables(url, template_vars)
+
+    return url
 
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     """
@@ -231,14 +249,9 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
         server: openresty
     ```
     """
-    base_url = test_config.get("base_url")
-
-    url = test_spec.get("url")
-    if is_relative_url(url):
-        url = base_url + url
-
     template_vars = test_config.get("template_vars")
-    url = replace_variables(url, template_vars)
+
+    url = url_from_spec(test_spec)
 
     # This allows one to have dynamic --connect-to settings, such as:
     #
