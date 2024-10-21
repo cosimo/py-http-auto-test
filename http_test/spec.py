@@ -20,8 +20,27 @@ class SpecFile:
     def __init__(self, path: Path):
         self.path = path
 
-    def load_tests(self):
-        test_config = yaml.safe_load(self.path.open())
+    def preprocess_yaml(self, template_vars=None):
+        """
+        Process the source YAML test file with Jinja2 replacing all variables.
+        This will also execute any jinja2 directives present in the source YAML
+        file within comment lines.
+
+        This is useful to factor out common expressions to use those across
+        all the spec tests in a single YAML file.
+        """
+        original_yaml = self.path.open().read()
+
+        env_vars = get_httptest_env_variables()
+        if template_vars:
+            env_vars.update(template_vars)
+
+        replaced_yaml = replace_variables(original_yaml, env_vars)
+        return replaced_yaml
+
+    def load_tests(self, template_vars=None):
+        yaml_document = self.preprocess_yaml(template_vars=template_vars)
+        test_config = yaml.safe_load(yaml_document)
         test_specs = test_config.get("tests", [])
         tests = []
 
@@ -219,6 +238,7 @@ def resolve_connect_to(url: str, test_config: dict) -> list:
 
     return connect_to
 
+
 def url_from_spec(test_spec: dict) -> str:
     """
     Returns a full templated URL from the test spec.
@@ -233,6 +253,7 @@ def url_from_spec(test_spec: dict) -> str:
     url = replace_variables(url, template_vars)
 
     return url
+
 
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     """
