@@ -2,3 +2,4 @@ isort
 black
 pytest
 setuptools
+wheel
