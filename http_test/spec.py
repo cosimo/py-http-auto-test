@@ -20,8 +20,27 @@ class SpecFile:
     def __init__(self, path: Path):
         self.path = path
 
-    def load_tests(self):
-        test_config = yaml.safe_load(self.path.open())
+    def preprocess_yaml(self, template_vars=None):
+        """
+        Process the source YAML test file with Jinja2 replacing all variables.
+        This will also execute any jinja2 directives present in the source YAML
+        file within comment lines.
+
+        This is useful to factor out common expressions to use those across
+        all the spec tests in a single YAML file.
+        """
+        original_yaml = self.path.open().read()
+
+        env_vars = get_httptest_env_variables()
+        if template_vars:
+            env_vars.update(template_vars)
+
+        replaced_yaml = replace_variables(original_yaml, env_vars)
+        return replaced_yaml
+
+    def load_tests(self, template_vars=None):
+        yaml_document = self.preprocess_yaml(template_vars=template_vars)
+        test_config = yaml.safe_load(yaml_document)
         test_specs = test_config.get("tests", [])
         tests = []
 
@@ -146,7 +165,6 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
 
             for expected_header in expected_headers:
                 header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
-                expected_value = replace_variables(expected_value, template_vars)
                 actual_values = response_headers.get(header_name) or ""
 
                 # For multiple instances of the same HTTP header, get() returns a list
@@ -182,8 +200,8 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-                expected_bytes = replace_variables(expected_string, template_vars).encode("utf-8")
-                # Must be bytes vs bytes here
+                # Must compare bytes vs bytes here
+                expected_bytes = expected_string.encode("utf-8")
                 assert (
                     expected_bytes in response_body
                 ), f"Expected response body to contain '{expected_string}': {_dump(result)}"
@@ -213,11 +231,8 @@ def resolve_connect_to(url: str, test_config: dict) -> list:
     if connect_to and not isinstance(connect_to, list):
         connect_to = [connect_to]
 
-    if connect_to:
-        template_vars = test_config.get("template_vars")
-        connect_to = [replace_variables(e, template_vars) for e in connect_to]
-
     return connect_to
+
 
 def url_from_spec(test_spec: dict) -> str:
     """
@@ -229,10 +244,8 @@ def url_from_spec(test_spec: dict) -> str:
     if is_relative_url(url):
         url = base_url + url
 
-    template_vars = test_config.get("template_vars")
-    url = replace_variables(url, template_vars)
-
     return url
+
 
 def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     """
@@ -249,8 +262,6 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
         server: openresty
     ```
     """
-    template_vars = test_config.get("template_vars")
-
     url = url_from_spec(test_spec)
 
     # This allows one to have dynamic --connect-to settings, such as:
@@ -267,9 +278,6 @@ def request_from_spec(test_spec: dict, test_config: dict) -> Request:
     use_http2 = test_spec.get("http2", False)
     verbose_output = test_spec.get("verbose", False)
     payload = test_spec.get("payload", None)
-
-    if headers:
-        headers = [replace_variables(h, template_vars) for h in headers]
 
     if verbose_output:
         print()
