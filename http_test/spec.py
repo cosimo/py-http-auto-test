@@ -179,7 +179,7 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
 
                 for actual_value in actual_values:
                     # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
-                    at_least_one_matches |= (expected_value.lower() in actual_value.lower())
+                    at_least_one_matches |= (expected_value.lower() in actual_value.lower()
                     if at_least_one_matches:
                         matching_value = actual_value
                         break
@@ -203,7 +203,6 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-
                 # Must compare bytes vs bytes here
                 expected_bytes = expected_string.encode("utf-8")
                 assert (
