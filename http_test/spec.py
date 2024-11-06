@@ -47,6 +47,9 @@ class SpecTest:
     def describe(self):
         return f"{self.name} for url {self.spec['url']}"
 
+    def skip(self):
+        return self.spec.get("skip", False)
+
     def run(self):
         test_config = self.spec["config"]
         test_spec = self.spec
@@ -122,7 +125,9 @@ def replace_variables(s: str, vars: dict = None) -> str:
     return t.render(**httptest_vars)
 
 
-def verify_response(result: dict, requirements: dict, template_vars: dict = None) -> bool:
+def verify_response(
+    result: dict, requirements: dict, template_vars: dict = None
+) -> bool:
     if not requirements:
         return True
 
@@ -141,7 +146,9 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
             expected_headers = requirements.get("headers")
 
             for expected_header in expected_headers:
-                header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
+                header_name, expected_value = list(
+                    map(str.strip, expected_header.split(":", 1))
+                )
                 expected_value = replace_variables(expected_value, template_vars)
                 actual_values = response_headers.get(header_name) or ""
 
@@ -154,7 +161,9 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
 
                 for actual_value in actual_values:
                     # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
-                    at_least_one_matches |= expected_value.lower() in actual_value.lower()
+                    at_least_one_matches |= (
+                        expected_value.lower() in actual_value.lower()
+                    )
                     if at_least_one_matches:
                         matching_value = actual_value
                         break
@@ -178,7 +187,9 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
             expected_strings = requirements.get("body")
             response_body = result.get("response_body_decoded")
             for expected_string in expected_strings:
-                expected_bytes = replace_variables(expected_string, template_vars).encode("utf-8")
+                expected_bytes = replace_variables(
+                    expected_string, template_vars
+                ).encode("utf-8")
                 # Must be bytes vs bytes here
                 assert (
                     expected_bytes in response_body
@@ -203,7 +214,11 @@ def resolve_connect_to(url: str, test_config: dict) -> list:
     parsed_url = urllib.parse.urlparse(url)
 
     if not connect_to and target_host:
-        port = parsed_url.port if parsed_url.port else (443 if parsed_url.scheme in ("wss", "https") else 80)
+        port = (
+            parsed_url.port
+            if parsed_url.port
+            else (443 if parsed_url.scheme in ("wss", "https") else 80)
+        )
         connect_to = [f"{parsed_url.hostname}:{port}:{target_host}"]
 
     if connect_to and not isinstance(connect_to, list):

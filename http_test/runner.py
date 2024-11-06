@@ -5,6 +5,7 @@ from http_test.spec import SpecFile, SpecTest
 
 RED = "\033[91m"
 GREEN = "\033[92m"
+YELLOW = "\033[93m"
 RESET = "\033[0m"
 
 
@@ -45,6 +46,7 @@ def run_specfiles(
 
     ok_mark = GREEN + "✓" + RESET
     ko_mark = RED + "✗" + RESET
+    skip_mark = YELLOW + "⚠" + RESET
 
     for test_filename in test_files:
         test_file = Path(test_filename)
@@ -54,6 +56,11 @@ def run_specfiles(
         for test in tests:
             inject_test_config_dict(test, target_host, template_vars)
             spec = SpecTest(name=test["name"], spec=test["spec"])
+
+            if spec.skip():
+                if verbose:
+                    print(f"{skip_mark} {spec.describe()} (skipped)")
+                continue
 
             try:
                 is_success = spec.run()
