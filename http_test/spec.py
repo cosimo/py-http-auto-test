@@ -148,9 +148,7 @@ def replace_variables(s: str, vars: dict = None) -> str:
     return t.render(**httptest_vars)
 
 
-def verify_response(
-    result: dict, requirements: dict, template_vars: dict = None
-) -> bool:
+def verify_response(result: dict, requirements: dict, template_vars: dict = None) -> bool:
     if not requirements:
         return True
 
@@ -169,7 +167,6 @@ def verify_response(
             expected_headers = requirements.get("headers")
 
             for expected_header in expected_headers:
-
                 header_name, expected_value = list(map(str.strip, expected_header.split(":", 1)))
                 actual_values = response_headers.get(header_name) or ""
 
@@ -182,9 +179,7 @@ def verify_response(
 
                 for actual_value in actual_values:
                     # print(f"Checking header '{header_name}'='{actual_value}' for value '{expected_value}'")
-                    at_least_one_matches |= (
-                        expected_value.lower() in actual_value.lower()
-                    )
+                    at_least_one_matches |= (expected_value.lower() in actual_value.lower())
                     if at_least_one_matches:
                         matching_value = actual_value
                         break
@@ -234,11 +229,7 @@ def resolve_connect_to(url: str, test_config: dict) -> list:
     parsed_url = urllib.parse.urlparse(url)
 
     if not connect_to and target_host:
-        port = (
-            parsed_url.port
-            if parsed_url.port
-            else (443 if parsed_url.scheme in ("wss", "https") else 80)
-        )
+        port = parsed_url.port if parsed_url.port else (443 if parsed_url.scheme in ("wss", "https") else 80)
         connect_to = [f"{parsed_url.hostname}:{port}:{target_host}"]
 
     if connect_to and not isinstance(connect_to, list):
