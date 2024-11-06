@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Cosimo Streppone",
     author_email="cosimo@streppone.it",
-    url="https://github.com/cosimo/py-http-test",
+    url="https://github.com/cosimo/py-http-auto-test",
     packages=["http_test"],
     license="MIT",
     install_requires=open("requirements.txt").readlines(),

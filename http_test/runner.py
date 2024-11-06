@@ -51,7 +51,7 @@ def run_specfiles(
     for test_filename in test_files:
         test_file = Path(test_filename)
         spec_file = SpecFile(path=test_file)
-        tests = spec_file.load_tests()
+        tests = spec_file.load_tests(template_vars=template_vars)
 
         for test in tests:
             inject_test_config_dict(test, target_host, template_vars)
