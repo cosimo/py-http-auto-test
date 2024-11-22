@@ -46,7 +46,10 @@ class YamlTest(pytest.Item):
         self.spec = SpecTest(name=spec.get("description", ""), spec=spec)
 
     def runtest(self):
-        self.spec.run()
+        if self.spec.skip():
+            return pytest.skip()
+        else:
+            return self.spec.run()
 
     def repr_failure(self, excinfo):
         """Called when self.runtest() raises an exception."""
