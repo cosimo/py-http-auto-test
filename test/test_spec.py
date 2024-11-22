@@ -1,7 +1,6 @@
 import pycurl
 
-from http_test.spec import verify_response
-from spec import SpecTest
+from http_test.spec import SpecTest, verify_response
 
 
 def test_verify_response_multiple_headers():
