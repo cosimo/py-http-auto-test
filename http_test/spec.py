@@ -71,6 +71,9 @@ class SpecTest:
             url = f"{url}\n  Connect-to: {connect_to}"
         return f"{self.name} for url {url}"
 
+    def skip(self):
+        return self.spec.get("skip", False)
+
     def run(self):
         test_config = self.spec["config"]
         test_spec = self.spec
