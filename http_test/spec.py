@@ -7,6 +7,7 @@ run the yaml tests as a pytest suite, though the running logic is
 embedded in here.
 """
 
+import difflib
 import os
 import urllib.parse
 from pathlib import Path
@@ -181,9 +182,15 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
                         matching_value = actual_value
                         break
 
-                assert (
-                    at_least_one_matches
-                ), f"Expected header {header_name} to contain '{expected_value}' (was '{matching_value}')"
+                assert_message = (
+                    f"Expected header {header_name} to contain '{expected_value}'\n" f"    was '{actual_value}'"
+                )
+
+                if not at_least_one_matches:
+                    text_diff = "\n".join(list(difflib.ndiff([expected_value], [actual_value])))
+                    assert_message += f"\n\n    Diff:\n{text_diff}"
+
+                assert at_least_one_matches, assert_message
 
         elif requirement == "timing":
             elapsed_time_s = result.get("elapsed")
