@@ -1,6 +1,7 @@
 import pycurl
 
 from http_test.spec import verify_response
+from spec import SpecTest
 
 
 def test_verify_response_multiple_headers():
@@ -27,3 +28,14 @@ def test_verify_response_multiple_headers():
     }
 
     assert verify_response(response, requirements)
+
+
+def test_skipped():
+    """
+    Verify that return values for skipped tests run() method are correct.
+    """
+    test = SpecTest(name="test", spec={"skip": True, "config": {}})
+    is_success, fail_reason = test.run()
+
+    assert is_success is True
+    assert fail_reason == "skipped"
