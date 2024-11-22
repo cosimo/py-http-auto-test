@@ -78,6 +78,12 @@ class SpecTest:
         test_config = self.spec["config"]
         test_spec = self.spec
 
+        # Test is marked as skipped: don't run, but output the assertion
+        if self.skip():
+            is_success = True
+            fail_reason = "skipped"
+            return is_success, fail_reason
+
         request: Request = request_from_spec(test_spec, test_config)
         result = request.fire()
 
@@ -86,7 +92,7 @@ class SpecTest:
         requirements = test_spec.get("match")
         template_vars = test_config.get("template_vars")
         is_success = verify_response(result, requirements, template_vars)
-        assert is_success, f"Failed: {test_spec.get('description')}"
+        assert_msg = self.describe()
 
         """
         # Repeat the same test connecting to a different IP address
@@ -117,7 +123,11 @@ class SpecTest:
             assert hash1.hexdigest() == hash2.hexdigest(), f"Response object from connect-to doesn't match original"
         """
 
-        return is_success
+        try:
+            assert is_success, assert_msg
+            return is_success, assert_msg
+        except AssertionError as e:
+            return False, str(e)
 
 
 def _dump(result: dict):
@@ -191,7 +201,7 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
 
                 if not at_least_one_matches:
                     text_diff = "\n".join(list(difflib.ndiff([expected_value], [actual_value])))
-                    assert_message += f"\n\n    Diff:\n{text_diff}"
+                    assert_message += f"\n\nDiff:\n{text_diff}"
 
                 assert at_least_one_matches, assert_message
 

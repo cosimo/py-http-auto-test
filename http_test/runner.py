@@ -57,22 +57,26 @@ def run_specfiles(
             inject_test_config_dict(test, target_host, template_vars)
             spec = SpecTest(name=test["name"], spec=test["spec"])
 
-            if spec.skip():
-                if verbose:
-                    print(f"{skip_mark} {spec.describe()} (skipped)")
-                continue
+            is_skipped = False
 
             try:
-                is_success = spec.run()
-                fail_reason = None
+                is_success, fail_reason = spec.run()
             except AssertionError as e:
                 is_success = False
                 fail_reason = str(e)
 
+            if fail_reason == "skipped":
+                is_skipped = True
+                fail_reason = None
+
             if verbose:
-                print(f"{ok_mark if is_success else ko_mark} " f"{spec.describe()}")
-                if fail_reason:
-                    print(f"    {RED}{fail_reason}{RESET}")
+                test_description = spec.describe()
+                if is_skipped:
+                    print(f"{skip_mark} {test_description} (SKIPPED)")
+                else:
+                    print(f"{ok_mark if is_success else ko_mark} {test_description}")
+                    if not is_success:
+                        print(f"    {RED}{fail_reason}{RESET}")
 
             if not is_success:
                 fail_count += 1
