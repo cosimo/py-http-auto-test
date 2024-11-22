@@ -144,8 +144,13 @@ An HTTP test has a bunch of attributes, some of which are optional. The followin
     - "accept: text/html"
     - "accept-encoding: gzip"
 
-  verbose: true   # false is the default
   http2: true     # false (http/1.1) is the default
+
+  # Skip a temporarily failing test by adding the `skip` attribute
+  skip: true      # false is the default
+
+  # Output the request and response dump with the test outcome
+  verbose: true   # false is the default
 
   # Here is where you specify the test requirements
   match:
