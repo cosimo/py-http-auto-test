@@ -9,7 +9,7 @@ import ssl
 
 import certifi
 import websockets
-from websockets.exceptions import InvalidStatusCode
+from websockets.exceptions import InvalidStatus
 
 NO_RESPONSE = {
     "status_code": 0,
@@ -59,12 +59,14 @@ async def ws_connect(
             "port": port,
             "compression": None,
             "close_timeout": read_timeout,
-            "extra_headers": headers_to_dict(extra_headers),
+            "additional_headers": headers_to_dict(extra_headers),
         }
 
         is_secure_ws = url.startswith("wss://")
         if is_secure_ws:
-            ws_connect_args.update(server_hostname=server_hostname, ssl=get_ssl_context())
+            ws_connect_args.update(
+                server_hostname=server_hostname, ssl=get_ssl_context()
+            )
 
         async with websockets.connect(url, **ws_connect_args) as websocket:
             try:
@@ -79,7 +81,9 @@ async def ws_connect(
                     return NO_RESPONSE
 
             except websockets.ConnectionClosed:
-                logging.warning("Connection closed while waiting for websocket response")
+                logging.warning(
+                    "Connection closed while waiting for websocket response"
+                )
                 return NO_RESPONSE
 
             response = {
@@ -91,7 +95,7 @@ async def ws_connect(
             logging.info(f"< {response}")
             return response
 
-    except InvalidStatusCode as e:
+    except InvalidStatus as e:
         logging.warning(f"Invalid status code received: {e.status_code}")
         return {
             "status_code": e.status_code,
