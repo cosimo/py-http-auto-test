@@ -3,7 +3,7 @@ pycurl~=7.45.2
 brotli==1.0.9
 certifi~=2023.7.22
 asyncio==3.4.3
-websockets>=11
+websockets~=13.1.0
 pyyaml
 jinja2~=3.1.2
 
