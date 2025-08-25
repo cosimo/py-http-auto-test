@@ -1,4 +1,5 @@
 import pycurl
+import pytest
 
 from http_test.spec import SpecTest, verify_response
 
@@ -27,6 +28,30 @@ def test_verify_response_multiple_headers():
     }
 
     assert verify_response(response, requirements)
+
+
+def test_verify_misspelled_requirement_name():
+    """
+    Verify that whenever the user misspells a match requirement (f.ex.
+    `header` instead of `headers`, we throw an exception instead of silently
+    succeeding the test.
+    """
+    response = {
+        "status_code": 200,
+        "response_headers": {
+            "content-type": "application/json",
+        },
+    }
+
+    requirements = {
+        # This is incorrect, it should be `headers` instead
+        "header": [
+            "content-type: application/json",
+        ]
+    }
+
+    with pytest.raises(ValueError):
+        assert verify_response(response, requirements)
 
 
 def test_skipped():

@@ -226,6 +226,9 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
                     expected_bytes in response_body
                 ), f"Expected response body to contain '{expected_string}': {_dump(result)}"
 
+        else:
+            raise ValueError(f"Unknown or misspelled requirement '{requirement}'")
+
     return True
 
 
