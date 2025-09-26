@@ -63,3 +63,99 @@ def test_skipped():
 
     assert is_success is True
     assert fail_reason == "skipped"
+
+
+def test_verify_response_headers_absent_success():
+    """
+    Test that headers_absent correctly passes when specified headers are not present.
+    """
+    response = {
+        "status_code": 200,
+        "response_headers": {
+            "content-type": "application/json",
+            "server": "nginx/1.18.0",
+        },
+    }
+
+    requirements = {
+        "headers_absent": [
+            "x-debug-info",
+            "x-powered-by",
+        ]
+    }
+
+    assert verify_response(response, requirements)
+
+
+def test_verify_response_headers_absent_failure():
+    """
+    Test that headers_absent correctly fails when a specified header is present.
+    """
+    response = {
+        "status_code": 200,
+        "response_headers": {
+            "content-type": "application/json",
+            "x-debug-info": "enabled",
+            "server": "nginx/1.18.0",
+        },
+    }
+
+    requirements = {
+        "headers_absent": [
+            "x-debug-info",
+        ]
+    }
+
+    with pytest.raises(AssertionError) as exc_info:
+        verify_response(response, requirements)
+
+    assert "Expected header 'x-debug-info' to be absent but it was found in response" in str(exc_info.value)
+
+
+def test_verify_response_headers_absent_case_insensitive():
+    """
+    Test that headers_absent is case-insensitive for header names.
+    """
+    response = {
+        "status_code": 200,
+        "response_headers": {
+            "Content-Type": "application/json",
+            "X-Debug-Info": "enabled",
+        },
+    }
+
+    requirements = {
+        "headers_absent": [
+            "x-debug-info",  # lowercase should match X-Debug-Info
+        ]
+    }
+
+    with pytest.raises(AssertionError) as exc_info:
+        verify_response(response, requirements)
+
+    assert "Expected header 'x-debug-info' to be absent but it was found in response" in str(exc_info.value)
+
+
+def test_verify_response_headers_absent_mixed_with_present():
+    """
+    Test that headers_absent works correctly when combined with regular headers requirement.
+    """
+    response = {
+        "status_code": 200,
+        "response_headers": {
+            "content-type": "application/json",
+            "server": "nginx/1.18.0",
+        },
+    }
+
+    requirements = {
+        "headers": [
+            "content-type: application/json",
+        ],
+        "headers_absent": [
+            "x-powered-by",
+            "x-debug-info",
+        ]
+    }
+
+    assert verify_response(response, requirements)
