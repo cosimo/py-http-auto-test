@@ -205,6 +205,19 @@ def verify_response(result: dict, requirements: dict, template_vars: dict = None
 
                 assert at_least_one_matches, assert_message
 
+        elif requirement == "headers_absent":
+            response_headers = result.get("response_headers")
+            expected_absent_headers = requirements.get("headers_absent")
+
+            for header_name in expected_absent_headers:
+                header_name = header_name.strip()
+                # Check if header exists in response headers (case-insensitive)
+                header_exists = any(
+                    actual_header.lower() == header_name.lower()
+                    for actual_header in response_headers.keys()
+                )
+                assert not header_exists, f"Expected header '{header_name}' to be absent but it was found in response"
+
         elif requirement == "timing":
             elapsed_time_s = result.get("elapsed")
             max_allowed_time = requirements.get("timing")
