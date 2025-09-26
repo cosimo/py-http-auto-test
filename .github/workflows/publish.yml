@@ -15,9 +15,15 @@ jobs:
     name: publish
     needs: [tests] # require tests to pass before deploy runs
     runs-on: ubuntu-latest
+
+    environment: pypi
+    permissions:
+      # IMPORTANT: this permission is mandatory for Trusted Publishing
+      id-token: write
+
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python 3
         uses: actions/setup-python@v4
@@ -34,6 +40,3 @@ jobs:
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
