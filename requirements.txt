@@ -1,5 +1,5 @@
 pytest~=7.4
-pycurl~=7.45.2
+pycurl>=7.45.7
 brotli==1.0.9
 certifi~=2023.7.22
 asyncio==3.4.3
